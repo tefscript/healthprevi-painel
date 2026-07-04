@@ -269,13 +269,7 @@
     const blocked   = document.getElementById('stateBlocked');
 
     function dentroDoHorario() {
-      // Converte hora atual para horário de Brasília (UTC-3)
-      const agora = new Date();
-      const brasilia = new Date(agora.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-      const diaSemana = brasilia.getDay(); // 0=dom, 6=sab
-      const hora = brasilia.getHours();
-      const fimDeSemana = diaSemana === 0 || diaSemana === 6;
-      return !fimDeSemana && hora >= 8 && hora < 18;
+      return true; // TEMPORÁRIO: bloqueio desativado para testes
     }
 
     function getDados() {
