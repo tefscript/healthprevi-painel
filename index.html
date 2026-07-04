@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prospecção de Advogados — HealthPrevi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Open Sans', sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 448px;
+    }
+
+    .logo-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .logo-icon { width: 40px; height: 40px; }
+    .logo-text { font-size: 22px; font-weight: 700; color: #1e3264; letter-spacing: -0.5px; }
+    .logo-text span { color: #2e7d32; }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #c5cfe0;
+      border-radius: 8px;
+      box-shadow: 0px 4px 16px 0px rgba(30, 50, 100, 0.08);
+      padding: 32px 28px;
+      margin-bottom: 16px;
+    }
+
+    .card-header { margin-bottom: 20px; }
+    .card-title { font-size: 20px; font-weight: 600; color: #1e3264; margin-bottom: 12px; }
+
+    .alert {
+      background: #f1f8f1;
+      border: 1px solid #a5d6a7;
+      border-radius: 6px;
+      padding: 12px 14px;
+      font-size: 12px;
+      color: #1b5e20;
+      line-height: 1.6;
+    }
+    .alert strong { display: block; margin-bottom: 6px; font-size: 12px; color: #2e7d32; }
+    .alert ul { padding-left: 16px; }
+    .alert ul li { margin-bottom: 4px; word-break: normal; overflow-wrap: anywhere; }
+
+    .horario-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #e8f5e9;
+      border: 1px solid #a5d6a7;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #2e7d32;
+      margin-top: 10px;
+    }
+    .horario-badge .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #2e7d32;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .form { margin-top: 24px; }
+    .field { margin-bottom: 18px; }
+
+    label { display: block; font-size: 14px; font-weight: 600; color: #1e3264; margin-bottom: 6px; }
+    label .required { color: #2e7d32; margin-left: 2px; }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      font-size: 14px;
+      font-family: inherit;
+      color: #3a4a6b;
+      background: #ffffff;
+      border: 1px solid #c5cfe0;
+      border-radius: 6px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus {
+      border-color: #2e7d32;
+      box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+    }
+    input[type="text"]::placeholder { opacity: 0.5; color: #3a4a6b; }
+
+    .submit-btn {
+      width: 100%;
+      height: 48px;
+      background: #2e7d32;
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      margin-top: 8px;
+    }
+    .submit-btn:hover { background: #256427; }
+    .submit-btn:active { transform: scale(0.99); }
+    .submit-btn:disabled { background: #a5d6a7; cursor: not-allowed; }
+
+    .state-loading,
+    .state-success,
+    .state-error,
+    .state-blocked { display: none; text-align: center; padding: 32px 0 16px; }
+
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid #c5cfe0;
+      border-top-color: #2e7d32;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .state-loading p { font-size: 14px; color: #5a6e99; }
+
+    .checkmark {
+      width: 56px; height: 56px;
+      background: #2e7d32;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .checkmark svg { width: 28px; height: 28px; }
+
+    .state-success h3 { font-size: 18px; color: #1e3264; margin-bottom: 8px; }
+    .state-success p  { font-size: 13px; color: #5a6e99; line-height: 1.6; }
+
+    .block-icon { font-size: 48px; margin-bottom: 12px; }
+    .state-blocked h3 { font-size: 18px; color: #1e3264; margin-bottom: 8px; }
+    .state-blocked p  { font-size: 13px; color: #5a6e99; line-height: 1.6; }
+
+    .error-icon { font-size: 40px; margin-bottom: 12px; }
+    .state-error h3 { font-size: 16px; color: #c62828; margin-bottom: 8px; }
+    .state-error p  { font-size: 13px; color: #5a6e99; margin-bottom: 16px; }
+
+    .retry-btn {
+      background: none; border: 1px solid #1e3264; color: #1e3264;
+      padding: 8px 20px; border-radius: 6px; font-size: 13px; font-family: inherit;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .retry-btn:hover { background: #f0f4f8; }
+
+    .footer { text-align: center; font-size: 12px; color: #5a6e99; margin-top: 4px; }
+    .footer a { color: #1e3264; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="logo-wrap">
+      <svg class="logo-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="40" height="40" rx="10" fill="#1e3264"/>
+        <path d="M20 8L28 13V27L20 32L12 27V13L20 8Z" stroke="#2e7d32" stroke-width="2" fill="none"/>
+        <path d="M16 20L19 23L24 17" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="logo-text">Health<span>Previ</span></span>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h1 class="card-title">Prospecção de Advogados</h1>
+        <div class="alert">
+          <strong>⚠️ Antes de disparar, leia com atenção:</strong>
+          <ul>
+            <li>Deixe o celular do Cristiano conectado e com internet estável</li>
+            <li>Não use o WhatsApp manualmente enquanto o bot estiver rodando</li>
+            <li>Se aparecer captcha ou verificação no celular, pare imediatamente</li>
+            <li>Em caso de dúvidas, fale com a Stefani antes de rodar</li>
+          </ul>
+          <div class="horario-badge">
+            <span class="dot"></span>
+            Disponível seg–sex, das 08h às 18h (horário de Brasília) — fator de segurança para proteger o WhatsApp do usuário
+          </div>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <div id="formWrap">
+        <form class="form" id="prospeccaoForm" novalidate>
+          <div class="field">
+            <label for="cidade">Cidade <span class="required">*</span></label>
+            <input type="text" id="cidade" name="cidade" placeholder="Ex: Blumenau" required autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="estado">Estado <span class="required">*</span></label>
+            <input type="text" id="estado" name="estado" placeholder="Ex: SC" maxlength="2" required autocomplete="off" />
+          </div>
+          <button type="submit" class="submit-btn" id="submitBtn">Iniciar Prospecção</button>
+        </form>
+      </div>
+
+      <!-- Loading -->
+      <div class="state-loading" id="stateLoading">
+        <div class="spinner"></div>
+        <p>Iniciando busca de advogados em <strong id="loadingCidade"></strong>...</p>
+      </div>
+
+      <!-- Success -->
+      <div class="state-success" id="stateSuccess">
+        <div class="checkmark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <h3>Prospecção iniciada!</h3>
+        <p>O fluxo foi acionado para <strong id="successCidade"></strong>.<br/>As mensagens serão enviadas automaticamente com os intervalos de segurança.</p>
+        <p id="successCounter" style="margin-top:12px; font-size:12px; color:#2e7d32; font-weight:600;"></p>
+        <button class="retry-btn" style="margin-top:16px;" onclick="resetForm()">Fazer nova busca</button>
+      </div>
+
+      <!-- Bloqueio de horário -->
+      <div class="state-blocked" id="stateBlocked">
+        <div class="block-icon">🕐</div>
+        <h3>Fora do horário!</h3>
+        <p id="blockedMsg">Esse sistema só funciona de <strong>segunda a sexta, das 08h às 18h</strong> (horário de Brasília). Volta nesse horário!</p>
+      </div>
+
+      <!-- Error -->
+      <div class="state-error" id="stateError">
+        <div class="error-icon">⚠️</div>
+        <h3>Erro ao iniciar</h3>
+        <p id="errorMsg">Não foi possível conectar ao servidor. Verifique se o n8n está rodando e tente novamente.</p>
+        <button class="retry-btn" onclick="resetForm()">Tentar novamente</button>
+      </div>
+    </div>
+
+    <p class="footer">HealthPrevi &copy; 2025 — <a href="mailto:stefani.santana@catolicasc.edu.br">Suporte</a></p>
+  </div>
+
+  <script>
+    const WEBHOOK_URL = 'https://n8n-production-e64b.up.railway.app/webhook/prospeccao';
+    const LIMITE_DIA  = 2;
+    const STORAGE_KEY = 'hp_prospeccao';
+
+    const form    = document.getElementById('prospeccaoForm');
+    const formWrap  = document.getElementById('formWrap');
+    const loading   = document.getElementById('stateLoading');
+    const success   = document.getElementById('stateSuccess');
+    const error     = document.getElementById('stateError');
+    const blocked   = document.getElementById('stateBlocked');
+
+    function dentroDoHorario() {
+      // Converte hora atual para horário de Brasília (UTC-3)
+      const agora = new Date();
+      const brasilia = new Date(agora.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+      const diaSemana = brasilia.getDay(); // 0=dom, 6=sab
+      const hora = brasilia.getHours();
+      const fimDeSemana = diaSemana === 0 || diaSemana === 6;
+      return !fimDeSemana && hora >= 8 && hora < 18;
+    }
+
+    function getDados() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return { data: '', count: 0 };
+      return JSON.parse(raw);
+    }
+
+    function getUsoHoje() {
+      const hoje = new Date().toISOString().slice(0, 10);
+      const d = getDados();
+      return d.data === hoje ? d.count : 0;
+    }
+
+    function registrarUso() {
+      const hoje = new Date().toISOString().slice(0, 10);
+      const count = getUsoHoje() + 1;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ data: hoje, count }));
+      return count;
+    }
+
+    function show(el) {
+      [formWrap, loading, success, error, blocked].forEach(e => e.style.display = 'none');
+      el.style.display = 'block';
+    }
+
+    function resetForm() {
+      if (!dentroDoHorario()) { show(blocked); return; }
+      if (getUsoHoje() >= LIMITE_DIA) {
+        show(error);
+        document.getElementById('errorMsg').textContent = 'Limite de 2 prospecções por dia atingido. Volte amanhã!';
+        return;
+      }
+      form.reset();
+      show(formWrap);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (!dentroDoHorario()) {
+        show(blocked);
+        return;
+      }
+      if (getUsoHoje() >= LIMITE_DIA) {
+        show(error);
+        document.getElementById('errorMsg').textContent = 'Limite de 2 prospecções por dia atingido. Volte amanhã!';
+      }
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!dentroDoHorario()) { show(blocked); return; }
+
+      if (getUsoHoje() >= LIMITE_DIA) {
+        show(error);
+        document.getElementById('errorMsg').textContent = 'Limite de 2 prospecções por dia atingido. Volte amanhã!';
+        return;
+      }
+
+      const cidade = document.getElementById('cidade').value.trim();
+      const estado = document.getElementById('estado').value.trim().toUpperCase();
+
+      if (!cidade || !estado) {
+        alert('Preencha cidade e estado antes de continuar.');
+        return;
+      }
+
+      document.getElementById('loadingCidade').textContent = `${cidade} - ${estado}`;
+      show(loading);
+
+      try {
+        const res = await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cidade, estado })
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const count = registrarUso();
+        const restante = LIMITE_DIA - count;
+        document.getElementById('successCidade').textContent = `${cidade} - ${estado}`;
+        document.getElementById('successCounter').textContent =
+          restante > 0
+            ? `Você ainda pode disparar mais ${restante}x hoje.`
+            : `Limite diário atingido. Volte amanhã!`;
+        show(success);
+      } catch (err) {
+        document.getElementById('errorMsg').textContent =
+          `Não foi possível conectar ao servidor (${err.message}). Verifique se o n8n está rodando e tente novamente.`;
+        show(error);
+      }
+    });
+  </script>
+</body>
+</html>
