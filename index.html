@@ -19,17 +19,11 @@
       padding: 24px 16px;
     }
 
-    .container {
-      width: 100%;
-      max-width: 448px;
-    }
+    .container { width: 100%; max-width: 448px; }
 
     .logo-wrap {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 24px;
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; margin-bottom: 24px;
     }
     .logo-icon { width: 40px; height: 40px; }
     .logo-text { font-size: 22px; font-weight: 700; color: #1e3264; letter-spacing: -0.5px; }
@@ -51,37 +45,24 @@
       background: #f1f8f1;
       border: 1px solid #a5d6a7;
       border-radius: 6px;
-      padding: 12px 14px;
+      padding: 14px 14px 10px;
       font-size: 12px;
       color: #1b5e20;
-      line-height: 1.6;
+      line-height: 1.7;
     }
-    .alert strong { display: block; margin-bottom: 6px; font-size: 12px; color: #2e7d32; }
-    .alert ul { padding-left: 16px; }
-    .alert ul li { margin-bottom: 4px; word-break: normal; overflow-wrap: anywhere; }
+    .alert strong.title { display: block; margin-bottom: 8px; font-size: 12px; color: #2e7d32; }
+    .alert ul { padding-left: 16px; margin-bottom: 10px; }
+    .alert ul li { margin-bottom: 4px; }
 
-    .horario-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: #e8f5e9;
-      border: 1px solid #a5d6a7;
-      border-radius: 20px;
-      padding: 4px 12px;
+    .alert-disclaimer {
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 6px;
+      padding: 10px 14px;
       font-size: 11px;
-      font-weight: 600;
-      color: #2e7d32;
+      color: #795548;
+      line-height: 1.6;
       margin-top: 10px;
-    }
-    .horario-badge .dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: #2e7d32;
-      animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
     }
 
     .form { margin-top: 24px; }
@@ -91,16 +72,9 @@
     label .required { color: #2e7d32; margin-left: 2px; }
 
     input[type="text"] {
-      width: 100%;
-      padding: 12px;
-      font-size: 14px;
-      font-family: inherit;
-      color: #3a4a6b;
-      background: #ffffff;
-      border: 1px solid #c5cfe0;
-      border-radius: 6px;
-      outline: none;
-      transition: border-color 0.2s;
+      width: 100%; padding: 12px; font-size: 14px; font-family: inherit;
+      color: #3a4a6b; background: #ffffff; border: 1px solid #c5cfe0;
+      border-radius: 6px; outline: none; transition: border-color 0.2s;
     }
     input[type="text"]:focus {
       border-color: #2e7d32;
@@ -109,54 +83,31 @@
     input[type="text"]::placeholder { opacity: 0.5; color: #3a4a6b; }
 
     .submit-btn {
-      width: 100%;
-      height: 48px;
-      background: #2e7d32;
-      color: #ffffff;
-      font-size: 14px;
-      font-weight: 600;
-      font-family: inherit;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-      margin-top: 8px;
+      width: 100%; height: 48px; background: #2e7d32; color: #ffffff;
+      font-size: 14px; font-weight: 600; font-family: inherit; border: none;
+      border-radius: 6px; cursor: pointer; transition: background 0.2s, transform 0.1s; margin-top: 8px;
     }
     .submit-btn:hover { background: #256427; }
     .submit-btn:active { transform: scale(0.99); }
-    .submit-btn:disabled { background: #a5d6a7; cursor: not-allowed; }
 
-    .state-loading,
-    .state-success,
-    .state-error,
-    .state-blocked { display: none; text-align: center; padding: 32px 0 16px; }
+    .state-loading, .state-success, .state-error { display: none; text-align: center; padding: 32px 0 16px; }
 
     .spinner {
-      width: 40px; height: 40px;
-      border: 3px solid #c5cfe0;
-      border-top-color: #2e7d32;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 16px;
+      width: 40px; height: 40px; border: 3px solid #c5cfe0;
+      border-top-color: #2e7d32; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 16px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     .state-loading p { font-size: 14px; color: #5a6e99; }
 
     .checkmark {
-      width: 56px; height: 56px;
-      background: #2e7d32;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 16px;
+      width: 56px; height: 56px; background: #2e7d32; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
     }
     .checkmark svg { width: 28px; height: 28px; }
 
     .state-success h3 { font-size: 18px; color: #1e3264; margin-bottom: 8px; }
     .state-success p  { font-size: 13px; color: #5a6e99; line-height: 1.6; }
-
-    .block-icon { font-size: 48px; margin-bottom: 12px; }
-    .state-blocked h3 { font-size: 18px; color: #1e3264; margin-bottom: 8px; }
-    .state-blocked p  { font-size: 13px; color: #5a6e99; line-height: 1.6; }
 
     .error-icon { font-size: 40px; margin-bottom: 12px; }
     .state-error h3 { font-size: 16px; color: #c62828; margin-bottom: 8px; }
@@ -188,17 +139,19 @@
     <div class="card">
       <div class="card-header">
         <h1 class="card-title">Prospecção de Advogados</h1>
+
         <div class="alert">
-          <strong>⚠️ Antes de disparar, leia com atenção:</strong>
+          <strong class="title">Recomendações para melhor resultado:</strong>
           <ul>
-            <li>Deixe o celular do Cristiano conectado e com internet estável</li>
+            <li>Prefira disparar de <strong>segunda a sexta, das 09h às 17h</strong> — menor risco de bloqueio</li>
+            <li>Deixe o celular do Cristiano conectado e com internet estável durante todo o processo</li>
             <li>Não use o WhatsApp manualmente enquanto o bot estiver rodando</li>
-            <li>Se aparecer captcha ou verificação no celular, pare imediatamente</li>
+            <li>Se aparecer captcha ou verificação no celular, interrompa imediatamente</li>
             <li>Em caso de dúvidas, fale com a Stefani antes de rodar</li>
           </ul>
-          <div class="horario-badge">
-            <span class="dot"></span>
-            Disponível seg–sex, das 08h às 18h (horário de Brasília) — fator de segurança para proteger o WhatsApp do usuário
+
+          <div class="alert-disclaimer">
+            O uso desta ferramenta é de responsabilidade de quem a opera. O disparo automatizado de mensagens via WhatsApp pode resultar em bloqueio temporário ou permanente do número utilizado. A equipe de desenvolvimento não se responsabiliza por eventuais suspensões do WhatsApp do usuário.
           </div>
         </div>
       </div>
@@ -214,7 +167,7 @@
             <label for="estado">Estado <span class="required">*</span></label>
             <input type="text" id="estado" name="estado" placeholder="Ex: SC" maxlength="2" required autocomplete="off" />
           </div>
-          <button type="submit" class="submit-btn" id="submitBtn">Iniciar Prospecção</button>
+          <button type="submit" class="submit-btn">Iniciar Prospecção</button>
         </form>
       </div>
 
@@ -233,15 +186,7 @@
         </div>
         <h3>Prospecção iniciada!</h3>
         <p>O fluxo foi acionado para <strong id="successCidade"></strong>.<br/>As mensagens serão enviadas automaticamente com os intervalos de segurança.</p>
-        <p id="successCounter" style="margin-top:12px; font-size:12px; color:#2e7d32; font-weight:600;"></p>
-        <button class="retry-btn" style="margin-top:16px;" onclick="resetForm()">Fazer nova busca</button>
-      </div>
-
-      <!-- Bloqueio de horário -->
-      <div class="state-blocked" id="stateBlocked">
-        <div class="block-icon">🕐</div>
-        <h3>Fora do horário!</h3>
-        <p id="blockedMsg">Esse sistema só funciona de <strong>segunda a sexta, das 08h às 18h</strong> (horário de Brasília). Volta nesse horário!</p>
+        <button class="retry-btn" style="margin-top:20px;" onclick="resetForm()">Fazer nova busca</button>
       </div>
 
       <!-- Error -->
@@ -258,76 +203,25 @@
 
   <script>
     const WEBHOOK_URL = 'https://n8n.mystudioflow.com.br/webhook/prospeccao';
-    const LIMITE_DIA  = 2;
-    const STORAGE_KEY = 'hp_prospeccao';
 
-    const form    = document.getElementById('prospeccaoForm');
-    const formWrap  = document.getElementById('formWrap');
-    const loading   = document.getElementById('stateLoading');
-    const success   = document.getElementById('stateSuccess');
-    const error     = document.getElementById('stateError');
-    const blocked   = document.getElementById('stateBlocked');
-
-    function dentroDoHorario() {
-      return true; // TEMPORÁRIO: bloqueio desativado para testes
-    }
-
-    function getDados() {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return { data: '', count: 0 };
-      return JSON.parse(raw);
-    }
-
-    function getUsoHoje() {
-      const hoje = new Date().toISOString().slice(0, 10);
-      const d = getDados();
-      return d.data === hoje ? d.count : 0;
-    }
-
-    function registrarUso() {
-      const hoje = new Date().toISOString().slice(0, 10);
-      const count = getUsoHoje() + 1;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ data: hoje, count }));
-      return count;
-    }
+    const form     = document.getElementById('prospeccaoForm');
+    const formWrap = document.getElementById('formWrap');
+    const loading  = document.getElementById('stateLoading');
+    const success  = document.getElementById('stateSuccess');
+    const error    = document.getElementById('stateError');
 
     function show(el) {
-      [formWrap, loading, success, error, blocked].forEach(e => e.style.display = 'none');
+      [formWrap, loading, success, error].forEach(e => e.style.display = 'none');
       el.style.display = 'block';
     }
 
     function resetForm() {
-      if (!dentroDoHorario()) { show(blocked); return; }
-      if (getUsoHoje() >= LIMITE_DIA) {
-        show(error);
-        document.getElementById('errorMsg').textContent = 'Limite de 2 prospecções por dia atingido. Volte amanhã!';
-        return;
-      }
       form.reset();
       show(formWrap);
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      if (!dentroDoHorario()) {
-        show(blocked);
-        return;
-      }
-      if (getUsoHoje() >= LIMITE_DIA) {
-        show(error);
-        document.getElementById('errorMsg').textContent = 'Limite de 2 prospecções por dia atingido. Volte amanhã!';
-      }
-    });
-
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-
-      if (!dentroDoHorario()) { show(blocked); return; }
-
-      if (getUsoHoje() >= LIMITE_DIA) {
-        show(error);
-        document.getElementById('errorMsg').textContent = 'Limite de 2 prospecções por dia atingido. Volte amanhã!';
-        return;
-      }
 
       const cidade = document.getElementById('cidade').value.trim();
       const estado = document.getElementById('estado').value.trim().toUpperCase();
@@ -349,13 +243,7 @@
 
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-        const count = registrarUso();
-        const restante = LIMITE_DIA - count;
         document.getElementById('successCidade').textContent = `${cidade} - ${estado}`;
-        document.getElementById('successCounter').textContent =
-          restante > 0
-            ? `Você ainda pode disparar mais ${restante}x hoje.`
-            : `Limite diário atingido. Volte amanhã!`;
         show(success);
       } catch (err) {
         document.getElementById('errorMsg').textContent =
