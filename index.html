@@ -184,9 +184,14 @@
             <polyline points="20 6 9 17 4 12"/>
           </svg>
         </div>
-        <h3>Prospecção iniciada!</h3>
-        <p>O fluxo foi acionado para <strong id="successCidade"></strong>.<br/>As mensagens serão enviadas automaticamente com os intervalos de segurança.</p>
-        <button class="retry-btn" style="margin-top:20px;" onclick="resetForm()">Fazer nova busca</button>
+        <h3>Prospecção em andamento!</h3>
+        <p>O fluxo foi acionado para <strong id="successCidade"></strong>.</p>
+        <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:12px 14px;margin-top:16px;text-align:left;font-size:12px;color:#5a6e99;line-height:1.7;">
+          <strong style="display:block;color:#e65100;margin-bottom:6px;">⏳ Processamento em andamento</strong>
+          As mensagens estão sendo enviadas com intervalos aleatórios para evitar banimento do WhatsApp. Dependendo da quantidade de contatos encontrados, o processo pode levar <strong>até 4 horas</strong> para ser concluído.<br/><br/>
+          <strong style="color:#c62828;">Não inicie uma nova busca enquanto este processo estiver rodando.</strong> Aguarde a conclusão antes de acionar outra cidade.
+        </div>
+        <button class="retry-btn" style="margin-top:20px;" onclick="resetForm()">Iniciar nova busca</button>
       </div>
 
       <!-- Error -->
