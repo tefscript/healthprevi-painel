@@ -120,6 +120,17 @@
     }
     .retry-btn:hover { background: #f0f4f8; }
 
+    .checkbox-group { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+    .checkbox-label {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 13px; color: #3a4a6b; cursor: pointer;
+      padding: 9px 12px; border: 1px solid #c5cfe0; border-radius: 6px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .checkbox-label:hover { border-color: #2e7d32; background: #f1f8f1; }
+    .checkbox-label input[type="checkbox"] { width: 16px; height: 16px; accent-color: #2e7d32; cursor: pointer; flex-shrink: 0; }
+    .checkbox-label.checked { border-color: #2e7d32; background: #f1f8f1; }
+
     .footer { text-align: center; font-size: 12px; color: #5a6e99; margin-top: 4px; }
     .footer a { color: #1e3264; text-decoration: none; }
   </style>
@@ -166,6 +177,20 @@
           <div class="field">
             <label for="estado">Estado <span class="required">*</span></label>
             <input type="text" id="estado" name="estado" placeholder="Ex: SC" maxlength="2" required autocomplete="off" />
+          </div>
+          <div class="field">
+            <label>Tipo de advogado <span class="required">*</span></label>
+            <div class="checkbox-group" id="tiposGroup">
+              <label class="checkbox-label" id="lbl-prev">
+                <input type="checkbox" name="tipos" value="previdenciário" /> Previdenciário
+              </label>
+              <label class="checkbox-label" id="lbl-trab">
+                <input type="checkbox" name="tipos" value="trabalhista" /> Trabalhista
+              </label>
+              <label class="checkbox-label" id="lbl-seg">
+                <input type="checkbox" name="tipos" value="seguros" /> Seguros
+              </label>
+            </div>
           </div>
           <button type="submit" class="submit-btn">Iniciar Prospecção</button>
         </form>
@@ -215,6 +240,13 @@
     const success  = document.getElementById('stateSuccess');
     const error    = document.getElementById('stateError');
 
+    // Visual feedback nos checkboxes
+    document.querySelectorAll('.checkbox-label input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        cb.closest('.checkbox-label').classList.toggle('checked', cb.checked);
+      });
+    });
+
     function show(el) {
       [formWrap, loading, success, error].forEach(e => e.style.display = 'none');
       el.style.display = 'block';
@@ -222,6 +254,7 @@
 
     function resetForm() {
       form.reset();
+      document.querySelectorAll('.checkbox-label').forEach(l => l.classList.remove('checked'));
       show(formWrap);
     }
 
@@ -230,9 +263,14 @@
 
       const cidade = document.getElementById('cidade').value.trim();
       const estado = document.getElementById('estado').value.trim().toUpperCase();
+      const tipos  = [...document.querySelectorAll('input[name="tipos"]:checked')].map(cb => cb.value);
 
       if (!cidade || !estado) {
         alert('Preencha cidade e estado antes de continuar.');
+        return;
+      }
+      if (tipos.length === 0) {
+        alert('Selecione pelo menos um tipo de advogado.');
         return;
       }
 
@@ -243,7 +281,7 @@
         const res = await fetch(WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cidade, estado })
+          body: JSON.stringify({ cidade, estado, tipos })
         });
 
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
