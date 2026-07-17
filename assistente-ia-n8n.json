@@ -1,0 +1,261 @@
+{
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "assistente-healthprevi", "options": {} },
+      "id": "n01", "name": "Webhook", "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1, "position": [-1000, 300], "webhookId": "hp-assistente-v2"
+    },
+    {
+      "parameters": {
+        "assignments": { "assignments": [
+          { "id": "c1", "name": "gemini_key",          "value": "COLE_SUA_CHAVE_GEMINI_AQUI",                                                                                                                                                                                                                    "type": "string" },
+          { "id": "c2", "name": "evolution_key",       "value": "081694E5520D-4644-B921-16C6D2379FAE",                                                                                                                                                                                                           "type": "string" },
+          { "id": "c3", "name": "evolution_instance",  "value": "cliente-healthprevi",                                                                                                                                                                                                                           "type": "string" },
+          { "id": "c4", "name": "evolution_url",       "value": "https://evolution.mystudioflow.com.br",                                                                                                                                                                                                         "type": "string" },
+          { "id": "c5", "name": "supabase_url",        "value": "https://zwmuabdjbezyhnealamx.supabase.co",                                                                                                                                                                                                      "type": "string" },
+          { "id": "c6", "name": "supabase_service_key","value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3bXVhYmRqYmV6eWhuZWFsYW14Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDI5ODU5NywiZXhwIjoyMDk5ODc0NTk3fQ.oLNXtPqGqswYDGQC7Kbaee0VmF2OcapEK_Sf4N1wQ4w", "type": "string" }
+        ]},
+        "options": {}
+      },
+      "id": "n02", "name": "Configuração", "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4, "position": [-800, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true },
+          "conditions": [
+            { "id": "v1", "leftValue": "={{ $('Webhook').item.json.body?.event }}", "rightValue": "messages.upsert", "operator": { "type": "string", "operation": "equals" } },
+            { "id": "v2", "leftValue": "={{ $('Webhook').item.json.body?.data?.key?.fromMe }}", "rightValue": true, "operator": { "type": "boolean", "operation": "notEquals" } }
+          ],
+          "combinator": "and"
+        }, "options": {}
+      },
+      "id": "n03", "name": "Filtrar Mensagem", "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2, "position": [-600, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $('Webhook').item.json.body;\nconst data = body?.data;\nif (!data) return [];\n\nconst remoteJid = data?.key?.remoteJid || '';\nif (remoteJid.includes('@g.us')) return [];\n\nconst telefone = remoteJid.split('@')[0];\nconst nomeContato = data?.pushName || telefone;\nconst msg = data?.message || {};\n\nconst texto = (msg.conversation || msg.extendedTextMessage?.text || '').trim();\n\nlet tipoMensagem = 'texto';\nlet arquivoInfo = null;\n\nif (msg.imageMessage) {\n  tipoMensagem = 'arquivo';\n  arquivoInfo = { mimetype: msg.imageMessage.mimetype || 'image/jpeg', extensao: 'jpg', nomeArquivo: `img_${Date.now()}.jpg` };\n} else if (msg.documentMessage) {\n  tipoMensagem = 'arquivo';\n  const fname = msg.documentMessage.fileName || `doc_${Date.now()}.pdf`;\n  arquivoInfo = { mimetype: msg.documentMessage.mimetype || 'application/pdf', extensao: fname.split('.').pop(), nomeArquivo: fname };\n} else if (msg.audioMessage || msg.stickerMessage) {\n  return [];\n}\n\nif (!texto && tipoMensagem === 'texto') return [];\n\nreturn [{ json: { telefone, nomeContato, tipoMensagem, texto, arquivoInfo, messageKey: data.key, messageData: data.message } }];"
+      },
+      "id": "n04", "name": "Extrair Dados", "type": "n8n-nodes-base.code",
+      "typeVersion": 2, "position": [-380, 260]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Configuração').item.json.supabase_url }}/rest/v1/conversas?telefone=eq.{{ $('Extrair Dados').item.json.telefone }}&select=*",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey",        "value": "={{ $('Configuração').item.json.supabase_service_key }}" },
+          { "name": "Authorization", "value": "=Bearer {{ $('Configuração').item.json.supabase_service_key }}" }
+        ]},
+        "options": {}
+      },
+      "id": "n05", "name": "Buscar Conversa", "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2, "position": [-160, 260], "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const dadosMsg = $('Extrair Dados').item.json;\nconst cfg      = $('Configuração').item.json;\nconst telefone  = dadosMsg.telefone;\nconst nomeContato = dadosMsg.nomeContato;\nconst tipoMensagem = dadosMsg.tipoMensagem;\nconst texto = dadosMsg.texto || '';\n\n// Pegar conversa do Supabase (pode ser array vazio)\nlet conversaRow = null;\ntry {\n  const rows = $input.all();\n  const found = rows.find(r => r.json?.telefone === telefone);\n  if (found && found.json?.telefone) conversaRow = found.json;\n} catch(e) {}\n\n// Timeout de 10 minutos em aguardando_arquivos\nconst TIMEOUT_MS = 10 * 60 * 1000;\nif (conversaRow?.estado === 'aguardando_arquivos') {\n  const lastUpdate = new Date(conversaRow.updated_at).getTime();\n  if (Date.now() - lastUpdate > TIMEOUT_MS) conversaRow = null;\n}\n\n// Conversa nova ou concluída → reiniciar\nif (!conversaRow || conversaRow.estado === 'concluido') {\n  const dadosIniciais = { historico: [], arquivos_pendentes: [], arquivos_coletados: [] };\n  dadosIniciais.historico.push({ role: 'user', parts: [{ text: texto }] });\n\n  const systemPrompt = `Você é Ana, assistente virtual da HealthPrevi, clínica especializada em laudos médicos periciais para processos do INSS, trabalhistas e de seguros, com atendimento presencial e online em todo o Brasil.\\n\\nSeu objetivo é coletar informações do paciente em ordem, UMA pergunta por mensagem:\\n\\n1. Nome completo\\n2. Tipo de laudo (opções: auxílio-doença, auxílio-acidente / pecúlio, BPC/LOAS)\\n3. Especialidade médica (ortopedista, clínico geral, psiquiatra, neurologista, outra)\\n4. Se possui atestados médicos antigos relacionados ao caso (responda com true ou false no JSON)\\n5. Se possui exames como raio-X, ressonância magnética, tomografia etc (true ou false)\\n6. Se possui prontuário médico (true ou false)\\n\\nREGRAS:\\n- UMA pergunta por mensagem, cordial e simples, máximo 3 linhas\\n- Se a resposta for fora do contexto, redirecione gentilmente\\n- Quando todas as 6 informações estiverem coletadas, envie uma mensagem dizendo que irá pedir os documentos em seguida e marque concluido como true\\n- Responda SEMPRE em português do Brasil\\n\\nRETORNE APENAS este JSON, sem texto antes ou depois:\\n{\\n  \\"mensagem\\": \\"texto para o paciente\\",\\n  \\"concluido\\": false,\\n  \\"dados\\": {\\n    \\"nome\\": null,\\n    \\"tipo_laudo\\": null,\\n    \\"especialidade\\": null,\\n    \\"tem_atestados\\": null,\\n    \\"tem_exames\\": null,\\n    \\"tem_prontuario\\": null\\n  }\\n}`;\n\n  const geminiPayload = {\n    systemInstruction: { parts: [{ text: systemPrompt }] },\n    contents: dadosIniciais.historico,\n    generationConfig: { temperature: 0.3, maxOutputTokens: 500 }\n  };\n\n  return [{ json: { acao: 'gemini', telefone, nomeContato, dadosAtuais: dadosIniciais, geminiPayload, geminiKey: cfg.gemini_key } }];\n}\n\nconst estado = conversaRow.estado;\nconst dados = typeof conversaRow.dados === 'string' ? JSON.parse(conversaRow.dados) : (conversaRow.dados || {});\nconst historico = dados.historico || [];\nconst arquivosPendentes = dados.arquivos_pendentes || [];\nconst arquivosColetados = dados.arquivos_coletados || [];\nconst etapaAtual = conversaRow.etapa_arquivo || arquivosPendentes[0];\n\n// ── ESTADO: qualificando ──────────────────────────────────────\nif (estado === 'qualificando') {\n  if (tipoMensagem === 'arquivo') {\n    return [{ json: {\n      acao: 'texto_simples', telefone, nomeContato,\n      mensagemResposta: 'Obrigado! Vou pedir os documentos em breve. Primeiro preciso de mais algumas informações em texto. Pode continuar?',\n      novoEstado: 'qualificando', novaEtapa: null, novosDados: dados, concluido: false, dadosLead: null\n    }}];\n  }\n\n  historico.push({ role: 'user', parts: [{ text: texto }] });\n  dados.historico = historico;\n\n  const systemPrompt = `Você é Ana, assistente virtual da HealthPrevi, clínica especializada em laudos médicos periciais para processos do INSS, trabalhistas e de seguros, com atendimento presencial e online em todo o Brasil.\\n\\nSeu objetivo é coletar informações do paciente em ordem, UMA pergunta por mensagem:\\n\\n1. Nome completo\\n2. Tipo de laudo (opções: auxílio-doença, auxílio-acidente / pecúlio, BPC/LOAS)\\n3. Especialidade médica (ortopedista, clínico geral, psiquiatra, neurologista, outra)\\n4. Se possui atestados médicos antigos relacionados ao caso (responda com true ou false no JSON)\\n5. Se possui exames como raio-X, ressonância magnética, tomografia etc (true ou false)\\n6. Se possui prontuário médico (true ou false)\\n\\nREGRAS:\\n- UMA pergunta por mensagem, cordial e simples, máximo 3 linhas\\n- Se a resposta for fora do contexto, redirecione gentilmente\\n- Quando todas as 6 informações estiverem coletadas, envie uma mensagem dizendo que irá pedir os documentos em seguida e marque concluido como true\\n- Responda SEMPRE em português do Brasil\\n\\nRETORNE APENAS este JSON, sem texto antes ou depois:\\n{\\n  \\"mensagem\\": \\"texto para o paciente\\",\\n  \\"concluido\\": false,\\n  \\"dados\\": {\\n    \\"nome\\": null,\\n    \\"tipo_laudo\\": null,\\n    \\"especialidade\\": null,\\n    \\"tem_atestados\\": null,\\n    \\"tem_exames\\": null,\\n    \\"tem_prontuario\\": null\\n  }\\n}`;\n\n  const geminiPayload = {\n    systemInstruction: { parts: [{ text: systemPrompt }] },\n    contents: historico,\n    generationConfig: { temperature: 0.3, maxOutputTokens: 500 }\n  };\n\n  return [{ json: { acao: 'gemini', telefone, nomeContato, dadosAtuais: dados, geminiPayload, geminiKey: cfg.gemini_key } }];\n}\n\n// ── ESTADO: aguardando_arquivos ───────────────────────────────\nif (estado === 'aguardando_arquivos') {\n  if (tipoMensagem === 'arquivo') {\n    return [{ json: {\n      acao: 'arquivo', telefone, nomeContato, etapaAtual,\n      arquivosPendentes, arquivosColetados, dados,\n      arquivoInfo: dadosMsg.arquivoInfo,\n      messageKey: dadosMsg.messageKey,\n      messageData: dadosMsg.messageData\n    }}];\n  }\n\n  // Texto recebido durante coleta de arquivos\n  const idxAtual = arquivosPendentes.indexOf(etapaAtual);\n  const restantes = arquivosPendentes.slice(idxAtual + 1);\n\n  const msgs = {\n    atestados: 'Perfeito! Agora, você tem exames como raio-X, ressonância ou tomografia? Se tiver, pode enviar aqui.',\n    exames: 'Ótimo! Por último: você tem prontuário médico? Se tiver, pode enviar.',\n    prontuario: null\n  };\n\n  if (restantes.length > 0) {\n    const proximo = restantes[0];\n    return [{ json: {\n      acao: 'texto_simples', telefone, nomeContato,\n      mensagemResposta: msgs[etapaAtual] || 'Entendido! Pode enviar o próximo documento?',\n      novoEstado: 'aguardando_arquivos', novaEtapa: proximo,\n      novosDados: dados, concluido: false, dadosLead: null\n    }}];\n  }\n\n  // Sem mais arquivos pendentes → concluir\n  const dadosLead = {\n    telefone, nome_contato_wa: nomeContato,\n    nome: dados.nome || null, tipo_laudo: dados.tipo_laudo || null,\n    especialidade: dados.especialidade || null,\n    tem_atestados: !!dados.tem_atestados,\n    tem_exames: !!dados.tem_exames,\n    tem_prontuario: !!dados.tem_prontuario\n  };\n\n  return [{ json: {\n    acao: 'texto_simples', telefone, nomeContato,\n    mensagemResposta: 'Perfeito! Recebemos tudo. A equipe da HealthPrevi entrará em contato em breve para agendar sua consulta. 😊',\n    novoEstado: 'concluido', novaEtapa: null,\n    novosDados: dados, concluido: true, dadosLead\n  }}];\n}\n\nreturn [{ json: { acao: 'texto_simples', telefone, nomeContato, mensagemResposta: 'Olá! Como posso ajudar?', novoEstado: 'qualificando', novaEtapa: null, novosDados: {}, concluido: false, dadosLead: null } }];"
+      },
+      "id": "n06", "name": "Processar Decisão", "type": "n8n-nodes-base.code",
+      "typeVersion": 2, "position": [80, 260]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            { "conditions": { "options": {}, "conditions": [{ "id": "s1", "leftValue": "={{ $json.acao }}", "rightValue": "gemini",        "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" } },
+            { "conditions": { "options": {}, "conditions": [{ "id": "s2", "leftValue": "={{ $json.acao }}", "rightValue": "arquivo",       "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" } },
+            { "conditions": { "options": {}, "conditions": [{ "id": "s3", "leftValue": "={{ $json.acao }}", "rightValue": "texto_simples", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" } }
+          ]
+        }, "options": {}
+      },
+      "id": "n07", "name": "Switch Ação", "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2, "position": [300, 260]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $json.geminiKey }}",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.geminiPayload) }}",
+        "options": { "timeout": 30000 }
+      },
+      "id": "n08", "name": "Chamar Gemini", "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2, "position": [520, 60]
+    },
+    {
+      "parameters": {
+        "jsCode": "const geminiText = $json.candidates?.[0]?.content?.parts?.[0]?.text || '';\nconst ctx = $('Processar Decisão').item.json;\nconst { telefone, nomeContato, dadosAtuais } = ctx;\n\nlet parsed;\ntry {\n  const match = geminiText.match(/\\{[\\s\\S]*\\}/);\n  parsed = JSON.parse(match ? match[0] : geminiText);\n} catch(e) {\n  parsed = { mensagem: 'Desculpe, tive um problema. Pode repetir?', concluido: false, dados: {} };\n}\n\nconst mensagem   = parsed.mensagem || 'Pode repetir?';\nconst concluido  = parsed.concluido === true;\nconst dadosGemini = parsed.dados || {};\n\nconst historico = dadosAtuais.historico || [];\nhistorico.push({ role: 'model', parts: [{ text: geminiText }] });\n\nconst dadosAtualizados = { ...dadosAtuais, historico };\nfor (const [k, v] of Object.entries(dadosGemini)) {\n  if (v !== null && v !== undefined) dadosAtualizados[k] = v;\n}\n\nlet novoEstado = 'qualificando';\nlet novaEtapa  = null;\nlet dadosLead  = null;\n\nif (concluido) {\n  const pendentes = [];\n  const ta = dadosAtualizados.tem_atestados;\n  const te = dadosAtualizados.tem_exames;\n  const tp = dadosAtualizados.tem_prontuario;\n  if (ta === true  || ta === 'true'  || ta === 'sim'  || ta === 'Sim')  pendentes.push('atestados');\n  if (te === true  || te === 'true'  || te === 'sim'  || te === 'Sim')  pendentes.push('exames');\n  if (tp === true  || tp === 'true'  || tp === 'sim'  || tp === 'Sim')  pendentes.push('prontuario');\n\n  dadosAtualizados.arquivos_pendentes = pendentes;\n  dadosAtualizados.arquivos_coletados = [];\n\n  if (pendentes.length > 0) {\n    novoEstado = 'aguardando_arquivos';\n    novaEtapa  = pendentes[0];\n    // Emenda na mensagem do Gemini para pedir o primeiro arquivo\n    const primeraMsgs = { atestados: ' Pode me enviar seus atestados médicos agora?', exames: ' Pode me enviar seus exames agora?', prontuario: ' Pode me enviar seu prontuário médico?' };\n  } else {\n    novoEstado = 'concluido';\n    dadosLead = { telefone, nome_contato_wa: nomeContato, nome: dadosAtualizados.nome || null, tipo_laudo: dadosAtualizados.tipo_laudo || null, especialidade: dadosAtualizados.especialidade || null, tem_atestados: false, tem_exames: false, tem_prontuario: false };\n  }\n}\n\nreturn [{ json: { telefone, nomeContato, mensagemResposta: mensagem, novoEstado, novaEtapa, novosDados: dadosAtualizados, concluido: novoEstado === 'concluido', dadosLead } }];"
+      },
+      "id": "n09", "name": "Parsear Gemini", "type": "n8n-nodes-base.code",
+      "typeVersion": 2, "position": [740, 60]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Configuração').item.json.evolution_url }}/chat/getBase64FromMediaMessage/{{ $('Configuração').item.json.evolution_instance }}",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey",       "value": "={{ $('Configuração').item.json.evolution_key }}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ]},
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={\n  \"message\": {\n    \"key\": {{ JSON.stringify($json.messageKey) }},\n    \"message\": {{ JSON.stringify($json.messageData) }}\n  }\n}",
+        "options": {}
+      },
+      "id": "n10", "name": "Baixar Mídia", "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2, "position": [520, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const base64   = $json.base64;\nconst mimetype = $json.mimetype || 'application/octet-stream';\nconst ctx      = $('Processar Decisão').item.json;\nconst { telefone, etapaAtual, arquivoInfo } = ctx;\n\nconst ext      = arquivoInfo?.extensao || 'bin';\nconst fname    = arquivoInfo?.nomeArquivo || `arquivo_${Date.now()}.${ext}`;\nconst storagePath = `${telefone}/${etapaAtual}/${fname}`;\n\nreturn [{\n  json: { telefone, mimetype, storagePath, fname, etapaAtual },\n  binary: { data: { data: base64, mimeType: mimetype, fileName: fname } }\n}];"
+      },
+      "id": "n11", "name": "Preparar Binário", "type": "n8n-nodes-base.code",
+      "typeVersion": 2, "position": [740, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Configuração').item.json.supabase_url }}/storage/v1/object/documentos/{{ $json.storagePath }}",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "Authorization", "value": "=Bearer {{ $('Configuração').item.json.supabase_service_key }}" },
+          { "name": "Content-Type",  "value": "={{ $json.mimetype }}" }
+        ]},
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "id": "n12", "name": "Upload Storage", "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2, "position": [960, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Configuração').item.json.supabase_url }}/rest/v1/arquivos",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey",        "value": "={{ $('Configuração').item.json.supabase_service_key }}" },
+          { "name": "Authorization", "value": "=Bearer {{ $('Configuração').item.json.supabase_service_key }}" },
+          { "name": "Content-Type",  "value": "application/json" },
+          { "name": "Prefer",        "value": "return=minimal" }
+        ]},
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={\n  \"telefone\": \"{{ $('Preparar Binário').item.json.telefone }}\",\n  \"tipo\": \"{{ $('Preparar Binário').item.json.etapaAtual }}\",\n  \"url_storage\": \"{{ $('Preparar Binário').item.json.storagePath }}\",\n  \"nome_arquivo\": \"{{ $('Preparar Binário').item.json.fname }}\"\n}",
+        "options": {}
+      },
+      "id": "n13", "name": "Registrar Arquivo DB", "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2, "position": [1180, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Processar Decisão').item.json;\nconst { telefone, nomeContato, etapaAtual, arquivosPendentes, arquivosColetados, dados } = ctx;\n\nconst coletados = [...(arquivosColetados || []), etapaAtual];\nconst idxAtual  = (arquivosPendentes || []).indexOf(etapaAtual);\nconst restantes = (arquivosPendentes || []).slice(idxAtual + 1);\n\ndados.arquivos_coletados = coletados;\n\nconst msgs = {\n  atestados:  'Atestado recebido! Agora, você tem exames como raio-X, ressonância ou tomografia? Se tiver, pode enviar aqui.',\n  exames:     'Exames recebidos! Por último: você tem prontuário médico? Se tiver, pode enviar.',\n  prontuario: null\n};\n\nif (restantes.length > 0) {\n  const proximo = restantes[0];\n  return [{ json: {\n    telefone, nomeContato,\n    mensagemResposta: msgs[etapaAtual] || 'Documento recebido! Pode enviar o próximo?',\n    novoEstado: 'aguardando_arquivos', novaEtapa: proximo,\n    novosDados: dados, concluido: false, dadosLead: null\n  }}];\n}\n\n// Último arquivo recebido → concluir\nconst dadosLead = {\n  telefone, nome_contato_wa: nomeContato,\n  nome: dados.nome || null, tipo_laudo: dados.tipo_laudo || null,\n  especialidade: dados.especialidade || null,\n  tem_atestados: (dados.arquivos_coletados || []).includes('atestados'),\n  tem_exames:    (dados.arquivos_coletados || []).includes('exames'),\n  tem_prontuario:(dados.arquivos_coletados || []).includes('prontuario')\n};\n\nreturn [{ json: {\n  telefone, nomeContato,\n  mensagemResposta: 'Perfeito! Recebemos todos os documentos. A equipe da HealthPrevi entrará em contato em breve para agendar sua consulta.',\n  novoEstado: 'concluido', novaEtapa: null,\n  novosDados: dados, concluido: true, dadosLead\n}}];"
+      },
+      "id": "n14", "name": "Avançar Etapa", "type": "n8n-nodes-base.code",
+      "typeVersion": 2, "position": [1400, 300]
+    },
+
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Configuração').item.json.supabase_url }}/rest/v1/conversas",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey",        "value": "={{ $('Configuração').item.json.supabase_service_key }}" },
+          { "name": "Authorization", "value": "=Bearer {{ $('Configuração').item.json.supabase_service_key }}" },
+          { "name": "Content-Type",  "value": "application/json" },
+          { "name": "Prefer",        "value": "resolution=merge-duplicates,return=minimal" }
+        ]},
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={\n  \"telefone\": \"{{ $json.telefone }}\",\n  \"estado\": \"{{ $json.novoEstado }}\",\n  \"etapa_arquivo\": {{ $json.novaEtapa ? JSON.stringify($json.novaEtapa) : 'null' }},\n  \"dados\": {{ JSON.stringify($json.novosDados) }},\n  \"updated_at\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "id": "n15", "name": "Salvar Estado", "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2, "position": [1620, 260]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {},
+          "conditions": [{ "id": "cc", "leftValue": "={{ $json.concluido }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }],
+          "combinator": "and"
+        }, "options": {}
+      },
+      "id": "n16", "name": "IF Concluído", "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2, "position": [1840, 260]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Configuração').item.json.supabase_url }}/rest/v1/leads",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey",        "value": "={{ $('Configuração').item.json.supabase_service_key }}" },
+          { "name": "Authorization", "value": "=Bearer {{ $('Configuração').item.json.supabase_service_key }}" },
+          { "name": "Content-Type",  "value": "application/json" },
+          { "name": "Prefer",        "value": "return=minimal" }
+        ]},
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.dadosLead) }}",
+        "options": {}
+      },
+      "id": "n17", "name": "Salvar Lead", "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2, "position": [2060, 160]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Configuração').item.json.evolution_url }}/message/sendText/{{ $('Configuração').item.json.evolution_instance }}",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey",       "value": "={{ $('Configuração').item.json.evolution_key }}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ]},
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $json.telefone }}\",\n  \"text\": {{ JSON.stringify($json.mensagemResposta) }}\n}",
+        "options": {}
+      },
+      "id": "n18", "name": "Enviar WhatsApp", "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2, "position": [2060, 360], "onError": "continueRegularOutput"
+    }
+  ],
+
+  "connections": {
+    "Webhook":          { "main": [[{ "node": "Configuração",     "type": "main", "index": 0 }]] },
+    "Configuração":     { "main": [[{ "node": "Filtrar Mensagem", "type": "main", "index": 0 }]] },
+    "Filtrar Mensagem": { "main": [[{ "node": "Extrair Dados",    "type": "main", "index": 0 }], []] },
+    "Extrair Dados":    { "main": [[{ "node": "Buscar Conversa",  "type": "main", "index": 0 }]] },
+    "Buscar Conversa":  { "main": [[{ "node": "Processar Decisão","type": "main", "index": 0 }]] },
+    "Processar Decisão":{ "main": [[{ "node": "Switch Ação",      "type": "main", "index": 0 }]] },
+    "Switch Ação": { "main": [
+      [{ "node": "Chamar Gemini", "type": "main", "index": 0 }],
+      [{ "node": "Baixar Mídia",  "type": "main", "index": 0 }],
+      [{ "node": "Salvar Estado", "type": "main", "index": 0 }]
+    ]},
+    "Chamar Gemini":     { "main": [[{ "node": "Parsear Gemini",     "type": "main", "index": 0 }]] },
+    "Parsear Gemini":    { "main": [[{ "node": "Salvar Estado",      "type": "main", "index": 0 }]] },
+    "Baixar Mídia":      { "main": [[{ "node": "Preparar Binário",   "type": "main", "index": 0 }]] },
+    "Preparar Binário":  { "main": [[{ "node": "Upload Storage",     "type": "main", "index": 0 }]] },
+    "Upload Storage":    { "main": [[{ "node": "Registrar Arquivo DB","type": "main", "index": 0 }]] },
+    "Registrar Arquivo DB":{ "main": [[{ "node": "Avançar Etapa",   "type": "main", "index": 0 }]] },
+    "Avançar Etapa":     { "main": [[{ "node": "Salvar Estado",      "type": "main", "index": 0 }]] },
+    "Salvar Estado":     { "main": [[{ "node": "IF Concluído",       "type": "main", "index": 0 }]] },
+    "IF Concluído": { "main": [
+      [{ "node": "Salvar Lead",    "type": "main", "index": 0 }],
+      [{ "node": "Enviar WhatsApp","type": "main", "index": 0 }]
+    ]},
+    "Salvar Lead":       { "main": [[{ "node": "Enviar WhatsApp",    "type": "main", "index": 0 }]] }
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "94253114b3cd2cea2819b4bd4f095ffcc60d56a5c0ce1556236dd83d6dabb5fa"
+  }
+}
