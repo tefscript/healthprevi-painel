@@ -135,11 +135,19 @@
       <h4>Documentos recebidos</h4>
       <div id="modalFiles"></div>
     </div>
-    <div style="margin-top:24px;padding-top:20px;border-top:1px solid #e2e8f0">
-      <button id="modalReabrir" class="btn btn-outline" style="color:#c53030;border-color:#fed7d7">
-        ↺ Reabrir conversa no bot
-      </button>
-      <p style="font-size:11px;color:#a0aec0;margin-top:8px">O bot voltará a responder este número normalmente.</p>
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid #e2e8f0;display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
+      <div>
+        <button id="modalReabrir" class="btn btn-outline" style="color:#c53030;border-color:#fed7d7">
+          ↺ Reabrir conversa no bot
+        </button>
+        <p style="font-size:11px;color:#a0aec0;margin-top:6px">O bot voltará a responder este número.</p>
+      </div>
+      <div>
+        <button id="modalExcluir" class="btn" style="background:#fff5f5;color:#c53030;border:1.5px solid #fed7d7">
+          🗑 Excluir paciente
+        </button>
+        <p style="font-size:11px;color:#a0aec0;margin-top:6px">Remove lead, arquivos e conversa.</p>
+      </div>
     </div>
   </div>
 </div>
@@ -280,11 +288,25 @@ async function verDetalhes(id) {
       filesDiv.innerHTML += `<div class="fileItem"><span class="fname">${arq.nome_arquivo || arq.tipo}</span><a href="${url}" target="_blank" rel="noopener">⬇ Baixar</a></div>`;
     }
   }
-  // Botão reabrir conversa
+  // Botões de ação
   const telefone = l.telefone;
+  const leadId   = l.id;
   document.getElementById('modalReabrir').onclick = () => reabrirConversa(telefone);
+  document.getElementById('modalExcluir').onclick = () => excluirPaciente(leadId, telefone);
 
   document.getElementById('detailOverlay').classList.add('open');
+}
+
+async function excluirPaciente(leadId, telefone) {
+  if (!confirm(`Excluir paciente ${telefone}? Remove o lead, arquivos e histórico de conversa. Essa ação não pode ser desfeita.`)) return;
+  await sb.from('arquivos').delete().eq('telefone', telefone);
+  await sb.from('conversas').delete().eq('telefone', telefone);
+  const { error } = await sb.from('leads').delete().eq('id', leadId);
+  if (error) { alert('Erro ao excluir: ' + error.message); return; }
+  allLeads = allLeads.filter(l => l.id !== leadId);
+  renderStats(allLeads);
+  renderTable(allLeads);
+  closeModal();
 }
 
 async function reabrirConversa(telefone) {
