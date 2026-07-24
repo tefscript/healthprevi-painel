@@ -135,6 +135,12 @@
       <h4>Documentos recebidos</h4>
       <div id="modalFiles"></div>
     </div>
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid #e2e8f0">
+      <button id="modalReabrir" class="btn btn-outline" style="color:#c53030;border-color:#fed7d7">
+        ↺ Reabrir conversa no bot
+      </button>
+      <p style="font-size:11px;color:#a0aec0;margin-top:8px">O bot voltará a responder este número normalmente.</p>
+    </div>
   </div>
 </div>
 
@@ -274,7 +280,21 @@ async function verDetalhes(id) {
       filesDiv.innerHTML += `<div class="fileItem"><span class="fname">${arq.nome_arquivo || arq.tipo}</span><a href="${url}" target="_blank" rel="noopener">⬇ Baixar</a></div>`;
     }
   }
+  // Botão reabrir conversa
+  const telefone = l.telefone;
+  document.getElementById('modalReabrir').onclick = () => reabrirConversa(telefone);
+
   document.getElementById('detailOverlay').classList.add('open');
+}
+
+async function reabrirConversa(telefone) {
+  if (!confirm(`Reabrir conversa de ${telefone}? O bot voltará a responder esse número.`)) return;
+  const { error } = await sb
+    .from('conversas')
+    .update({ estado: 'qualificando', etapa_arquivo: null, dados: {}, updated_at: new Date().toISOString() })
+    .eq('telefone', telefone);
+  if (error) { alert('Erro ao reabrir: ' + error.message); return; }
+  alert('Conversa reaberta! O bot vai responder normalmente agora.');
 }
 
 function closeModal() { document.getElementById('detailOverlay').classList.remove('open'); }
